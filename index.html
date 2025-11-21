@@ -1,24 +1,1526 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>PROJECT HIRAYA</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    img {
-      max-width: 100%;
-      max-height: 100%;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>stifi's desktop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* =========================================
+           CSS VARIABLES & RESET
+           ========================================= */
+        :root {
+            --bg-teal: #008080;
+            --win-gray: #c0c0c0;
+            --win-blue: #000080;
+            --win-dark: #808080;
+            --win-light: #ffffff;
+            --win-black: #000000;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-teal);
+            background-image: none;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            font-family: 'Tahoma', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            transition: background-color 0.3s ease;
+        }
+
+        /* =========================================
+           DESKTOP ICON STYLES
+           ========================================= */
+        #desktop {
+            width: 100vw;
+            height: calc(100vh - 40px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .icon {
+            width: 80px;
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: default;
+            text-align: center;
+            color: white;
+            text-shadow: 1px 1px 0px #000;
+            z-index: 1;
+        }
+
+        .icon i {
+            font-size: 32px;
+            margin-bottom: 5px;
+            color: #f1c40f; 
+            pointer-events: none; 
+        }
+        
+        .icon.trash i { color: #bdc3c7; }
+        /* Updated Music Icon color for better visibility */
+        .icon.music-folder i { color: #e67e22; text-shadow: 2px 2px 0px #000; }
+
+        .icon span {
+            font-size: 14px;
+            padding: 2px;
+            background-color: transparent;
+            pointer-events: none;
+        }
+
+        .icon:active span, .icon.selected span {
+            background-color: var(--win-blue);
+            border: 1px dotted white;
+        }
+
+        /* =========================================
+           WINDOW STYLES (RESIZABLE)
+           ========================================= */
+        .window {
+            position: absolute;
+            background-color: var(--win-gray);
+            padding: 3px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 
+                inset 1px 1px 0px var(--win-light),
+                inset -1px -1px 0px var(--win-dark),
+                inset 2px 2px 0px var(--win-light), 
+                inset -2px -2px 0px var(--win-black),
+                2px 2px 5px rgba(0,0,0,0.5);
+            min-width: 300px;
+            min-height: 200px;
+            z-index: 10; 
+            
+            /* INTERACTIVE RESIZING */
+            resize: both;
+            overflow: auto; /* Required for resize to work */
+        }
+
+        /* Custom Scrollbar for Webkit (Chrome/Safari) to look retro */
+        .window::-webkit-scrollbar { width: 16px; height: 16px; }
+        .window::-webkit-scrollbar-track { background: #dfdfdf; border-left: 1px solid white; }
+        .window::-webkit-scrollbar-thumb { 
+            background: #c0c0c0; 
+            border: 2px outset #fff;
+        }
+        .window::-webkit-resizer {
+            background: #c0c0c0;
+            border: 1px solid #808080;
+            /* visual indicator for resize handle */
+            background-image: linear-gradient(135deg, transparent 50%, #808080 50%), linear-gradient(135deg, transparent 50%, #fff 50%);
+            background-size: 4px 4px;
+        }
+
+        .title-bar {
+            background: linear-gradient(90deg, var(--win-blue), #1084d0);
+            padding: 3px 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: default;
+            flex-shrink: 0; /* Prevent title bar from shrinking */
+        }
+
+        .title-bar-text {
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .title-bar-controls button {
+            width: 20px;
+            height: 18px;
+            background-color: var(--win-gray);
+            border: 1px solid;
+            border-color: var(--win-light) var(--win-black) var(--win-black) var(--win-light);
+            font-size: 10px;
+            font-weight: bold;
+            line-height: 10px;
+            cursor: pointer;
+            margin-left: 2px;
+        }
+
+        .title-bar-controls button:active {
+            border-color: var(--win-black) var(--win-light) var(--win-light) var(--win-black);
+            padding-top: 2px;
+        }
+
+        .window-body {
+            margin-top: 2px;
+            padding: 10px;
+            background-color: white;
+            color: black;
+            border: inset 2px;
+            height: 100%;
+            overflow: auto; /* Internal scrolling */
+            font-family: 'Courier New', Courier, monospace;
+            flex-grow: 1; /* Fills the space when resized */
+        }
+
+        .window.folder .window-body {
+            background-color: var(--win-gray);
+            border: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-content: flex-start;
+        }
+
+        /* =========================================
+           DISPLAY PROPERTIES STYLES
+           ========================================= */
+        .window.properties .window-body {
+            background-color: var(--win-gray);
+            border: none;
+            font-family: 'Tahoma', sans-serif;
+            font-size: 12px;
+        }
+
+        fieldset {
+            border: 1px solid #808080;
+            border-radius: 0;
+            margin-bottom: 10px;
+            padding: 10px;
+            box-shadow: inset 1px 1px 0px white, inset -1px -1px 0px #dfdfdf;
+        }
+
+        legend { font-weight: bold; padding: 0 5px; }
+
+        .prop-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 10px;
+        }
+
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border: inset 2px;
+            cursor: pointer;
+        }
+
+        .prop-preview {
+            width: 100px;
+            height: 75px;
+            background-color: var(--bg-teal);
+            border: inset 2px;
+            margin: 0 auto 10px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* =========================================
+           MEDIA VIEWERS
+           ========================================= */
+        .window.media-viewer .window-body {
+            background-color: #000; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 0;
+        }
+        
+        .window.media-viewer img, .window.media-viewer video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .project-item, .music-file-item, .trash-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 80px;
+            text-align: center;
+            cursor: pointer;
+            padding: 5px;
+            border: 1px solid transparent;
+        }
+        
+        .project-item:hover, .music-file-item:hover, .trash-item:hover {
+            border: 1px dotted #fff;
+            background-color: rgba(0,0,128, 0.1);
+        }
+
+        .project-item i, .music-file-item i, .trash-item i {
+            font-size: 28px;
+            color: #e67e22; 
+            margin-bottom: 5px;
+        }
+        
+        .music-file-item i { color: #9b59b6; } 
+        .trash-item i { color: #7f8c8d; }
+        
+        .project-item span, .music-file-item span, .trash-item span { 
+            font-size: 12px; 
+            word-break: break-word;
+            font-family: 'Tahoma', sans-serif;
+        }
+
+        #drag-ghost {
+            position: fixed;
+            pointer-events: none; 
+            z-index: 9999;
+            opacity: 0.8;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 80px;
+            text-align: center;
+        }
+        #drag-ghost i { font-size: 32px; color: #9b59b6; }
+        #drag-ghost span { background: var(--win-blue); color: white; font-size: 12px; }
+
+        /* =========================================
+           TASKBAR STYLES
+           ========================================= */
+        #taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background-color: var(--win-gray);
+            border-top: 2px solid var(--win-light);
+            display: flex;
+            align-items: center;
+            padding: 2px;
+            z-index: 2000;
+        }
+
+        #start-button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            height: 32px;
+            padding: 0 10px;
+            margin-right: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            background-color: var(--win-gray);
+            box-shadow: inset 2px 2px 0px var(--win-light), inset -2px -2px 0px var(--win-black);
+            cursor: pointer;
+        }
+        
+        #start-button:active, #start-button.active {
+            box-shadow: inset 2px 2px 0px var(--win-black), inset -2px -2px 0px var(--win-light);
+            padding-top: 2px;
+        }
+
+        .taskbar-app {
+            height: 32px;
+            padding: 0 10px;
+            margin-right: 2px;
+            background-color: var(--win-gray);
+            border: inset 2px;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            cursor: pointer;
+            max-width: 200px;
+            overflow: hidden;
+        }
+        
+        .taskbar-app.active {
+            border: outset 2px;
+            background-color: #dfdfdf;
+        }
+
+        .divider {
+            width: 2px;
+            height: 28px;
+            background-color: var(--win-dark);
+            border-right: 1px solid var(--win-light);
+            margin: 0 5px;
+        }
+
+        #tray {
+            margin-left: auto;
+            padding: 0 10px;
+            height: 32px;
+            background-color: var(--win-gray);
+            border: inset 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            min-width: 80px;
+        }
+
+        /* =========================================
+           START MENU
+           ========================================= */
+        #start-menu {
+            position: fixed;
+            bottom: 42px;
+            left: 2px;
+            width: 200px;
+            background-color: var(--win-gray);
+            box-shadow: inset 2px 2px 0px var(--win-light), inset -2px -2px 0px var(--win-black), 2px 2px 5px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 2001;
+        }
+
+        .start-sidebar {
+            width: 25px;
+            background: linear-gradient(to bottom, #000080, #1084d0);
+            position: absolute;
+            left: 2px;
+            top: 2px;
+            bottom: 2px;
+            display: flex;
+            align-items: flex-end;
+        }
+        
+        .start-sidebar span {
+            transform: rotate(-90deg);
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            white-space: nowrap;
+            margin-bottom: 10px;
+            margin-left: 5px;
+        }
+
+        .menu-items {
+            margin-left: 30px;
+            padding: 2px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .menu-item:hover {
+            background-color: var(--win-blue);
+            color: white;
+        }
+
+        .menu-item i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* =========================================
+           WINAMP STYLES
+           ========================================= */
+        .winamp {
+            background-color: #222;
+            color: #0f0; 
+            font-family: 'VT323', monospace;
+            padding: 0;
+        }
+        
+        .winamp-display {
+            background-color: #000;
+            border: 2px solid #555;
+            margin: 10px;
+            padding: 10px;
+            text-align: center;
+            pointer-events: auto; 
+            height: 100px; /* Fixed height for display area */
+            overflow: hidden;
+            position: relative;
+        }
+
+        .winamp-controls {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .win-btn {
+            background: #c0c0c0;
+            border: 1px outset #fff;
+            font-size: 10px;
+            width: 30px;
+            cursor: pointer;
+        }
+        .win-btn:active { border: 1px inset #fff; }
+
+        .winamp.drag-over {
+            border: 2px solid yellow;
+            box-shadow: 0 0 10px yellow;
+        }
+
+        /* Progress bar styles */
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            margin: 5px 0;
+            border: inset 2px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0f0, #ff0);
+            width: 0%;
+            transition: width 0.1s;
+        }
+
+        /* Color picker styles */
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .color-picker {
+            width: 30px;
+            height: 30px;
+            border: 2px inset #c0c0c0;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            .window {
+                width: 95% !important;
+                left: 2.5% !important;
+                top: 10% !important;
+            }
+        }
+    </style>
 </head>
 <body>
-  <img src="l4d2ph_motd.png" alt="project_hiraya">
+
+    <!-- Drag Ghost Element -->
+    <div id="drag-ghost">
+        <i class="fa-solid fa-music"></i>
+        <span id="drag-ghost-text">Song.mp3</span>
+    </div>
+
+    <!-- Desktop Area -->
+    <div id="desktop">
+        
+        <!-- Icon: About Me -->
+        <div class="icon" style="top: 20px; left: 20px;" onmousedown="startIconDrag(event, this)" ondblclick="openWindow('aboutWindow')">
+            <i class="fa-solid fa-user-tie" style="color: #3498db;"></i>
+            <span>about me</span>
+        </div>
+
+        <!-- Icon: Projects -->
+        <div class="icon" style="top: 120px; left: 20px;" onmousedown="startIconDrag(event, this)" ondblclick="openWindow('projectsWindow')">
+            <i class="fa-solid fa-folder-open"></i>
+            <span>projects</span>
+        </div>
+
+        <!-- Icon: Music (Updated Icon) -->
+        <div class="icon music-folder" style="top: 220px; left: 20px;" onmousedown="startIconDrag(event, this)" ondblclick="openWindow('musicFolderWindow')">
+            <!-- Using a stack logic manually or just a distinct icon -->
+            <i class="fa-solid fa-folder-open" style="position:absolute;"></i>
+            <i class="fa-solid fa-music" style="position:absolute; font-size: 16px; top: 12px; color: #fff;"></i>
+            <div style="height: 32px;"></div> <!-- spacer -->
+            <span>music</span>
+        </div>
+
+        <!-- Icon: Contact -->
+        <div class="icon" style="top: 320px; left: 20px;" onmousedown="startIconDrag(event, this)" ondblclick="openWindow('contactWindow')">
+            <i class="fa-solid fa-envelope-open-text" style="color: #9b59b6;"></i>
+            <span>contact</span>
+        </div>
+
+        <!-- Icon: Music Player -->
+        <div class="icon" style="top: 20px; left: 120px;" onmousedown="startIconDrag(event, this)" ondblclick="openWindow('musicWindow')">
+            <i class="fa-solid fa-bolt" style="color: #e7dc3c;"></i>
+            <span>winamp</span>
+        </div>
+        
+        <!-- Icon: Recycle Bin -->
+        <div class="icon trash" style="bottom: 60px; right: 20px;" onmousedown="startIconDrag(event, this)" ondblclick="openWindow('recycleWindow')">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>recycle bin</span>
+        </div>
+
+    </div>
+
+    <!-- WINDOWS -->
+
+    <!-- 1. About Me Window -->
+    <div id="aboutWindow" class="window" style="top: 50px; left: 150px; width: 400px;">
+        <div class="title-bar" onmousedown="startDrag(event, 'aboutWindow')">
+            <div class="title-bar-text">
+                <i class="fa-solid fa-note-sticky" style="margin-right:5px;"></i> About_Me.txt
+            </div>
+            <div class="title-bar-controls">
+                <button onclick="closeWindow('aboutWindow')">X</button>
+            </div>
+        </div>
+        <div class="window-body">
+            <p>HI! I'M A STIFI!!!</p>
+            <br>
+
+            <p> a graphics designer<br>
+                based in: universe red<br>
+                been a graphics designer for 99999 years<br>
+            tools i used are: stone, sticks, and fire</p>
+            <br>
+            <p>i make art</p>
+        </div>
+    </div>
+
+    <!-- 2. Projects Window -->
+    <div id="projectsWindow" class="window folder" style="top: 80px; left: 250px; width: 500px; height: 350px;">
+        <div class="title-bar" onmousedown="startDrag(event, 'projectsWindow')">
+            <div class="title-bar-text">
+                <i class="fa-solid fa-folder-open" style="margin-right:5px;"></i> C:\Projects
+            </div>
+            <div class="title-bar-controls">
+                <button onclick="closeWindow('projectsWindow')">X</button>
+            </div>
+        </div>
+        <div style="background: #c0c0c0; padding: 2px 5px; border-bottom: 1px solid #808080; font-size: 12px;">
+            <span onclick="addProjectFile('image')" style="margin-right: 10px; cursor: pointer;"><b><u>F</u>ile > Add Image...</b></span>
+            <span onclick="addProjectFile('video')" style="margin-right: 10px; cursor: pointer;"><b><u>F</u>ile > Add Video...</b></span>
+            <u>V</u>iew  <u>H</u>elp
+        </div>
+        <div class="window-body" id="project-file-container">
+            <div style="width:100%; font-size:10px; color: gray; padding: 5px;">* Double-click to view *</div>
+            <!-- Project files will be dynamically generated here -->
+        </div>
+    </div>
+
+    <!-- 3. Display Properties Window -->
+    <div id="displayWindow" class="window properties" style="top: 100px; left: 150px; width: 350px;">
+        <div class="title-bar" onmousedown="startDrag(event, 'displayWindow')">
+            <div class="title-bar-text">
+                <i class="fa-solid fa-desktop" style="margin-right:5px;"></i> Display Properties
+            </div>
+            <div class="title-bar-controls">
+                <button onclick="closeWindow('displayWindow')">X</button>
+            </div>
+        </div>
+        <div class="window-body">
+            <div class="prop-preview" id="bg-preview">
+                <i class="fa-brands fa-windows" style="color: rgba(255,255,255,0.5); font-size: 30px;"></i>
+            </div>
+            
+            <fieldset>
+                <legend>Wallpaper</legend>
+                <div class="prop-row">
+                    <select id="wallpaper-select" onchange="updateWallpaperPreview()" style="width: 100%;">
+                        <option value="none"> (None) </option>
+                        <option value="clouds">Clouds</option>
+                        <option value="stars">Starry Space</option>
+                        <option value="matrix">Matrix Code</option>
+                    </select>
+                </div>
+                <div class="prop-row">
+                    <label>Display:</label>
+                    <select id="wallpaper-style" onchange="updateWallpaperPreview()">
+                        <option value="cover">Stretch</option>
+                        <option value="repeat">Tile</option>
+                        <option value="contain">Center</option>
+                    </select>
+                </div>
+                <div class="prop-row" style="border-top: 1px dotted #808080; padding-top: 8px;">
+                    <label>Upload:</label>
+                    <input type="file" id="custom-bg-input" accept="image/*" onchange="handleCustomBg(this)" style="width: 150px; font-size: 10px;">
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Solid Color</legend>
+                <div class="prop-row" style="justify-content: space-around; flex-wrap: wrap;">
+                    <div class="color-box" style="background: #008080;" onclick="setBgColor('#008080')" title="Classic Teal"></div>
+                    <div class="color-box" style="background: #000080;" onclick="setBgColor('#000080')" title="Win Blue"></div>
+                    <div class="color-box" style="background: #000000;" onclick="setBgColor('#000000')" title="Black"></div>
+                    <div class="color-box" style="background: #ffffff;" onclick="setBgColor('#ffffff')" title="White"></div>
+                    <div class="color-box" style="background: #800080;" onclick="setBgColor('#800080')" title="Purple"></div>
+                    <div class="color-box" style="background: #ff0000;" onclick="setBgColor('#ff0000')" title="Red"></div>
+                    <div class="color-box" style="background: #00ff00;" onclick="setBgColor('#00ff00')" title="Green"></div>
+                    <div class="color-box" style="background: #0000ff;" onclick="setBgColor('#0000ff')" title="Blue"></div>
+                    <div class="color-box" style="background: #ffff00;" onclick="setBgColor('#ffff00')" title="Yellow"></div>
+                    <div class="color-box" style="background: #ff00ff;" onclick="setBgColor('#ff00ff')" title="Magenta"></div>
+                </div>
+                <div class="color-picker-container">
+                    <label>Rainbow:</label>
+                    <input type="color" id="color-picker" class="color-picker" onchange="setBgColor(this.value)" title="Choose any color">
+                    <span id="color-hex">#008080</span>
+                </div>
+            </fieldset>
+
+            <div style="text-align: right; margin-top: 10px;">
+                <button onclick="applyWallpaper()" style="padding: 5px 15px;">Apply</button>
+                <button onclick="closeWindow('displayWindow')" style="padding: 5px 15px;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Photo Viewer -->
+    <div id="photoWindow" class="window media-viewer" style="top: 60px; left: 100px; width: 500px; height: 400px;">
+        <div class="title-bar" onmousedown="startDrag(event, 'photoWindow')">
+            <div class="title-bar-text">
+                <i class="fa-regular fa-image" style="margin-right:5px;"></i> <span id="photo-title">Image Viewer</span>
+            </div>
+            <div class="title-bar-controls">
+                <button onclick="closeWindow('photoWindow')">X</button>
+            </div>
+        </div>
+        <div class="window-body">
+            <img id="photo-content" src="" alt="Preview">
+        </div>
+    </div>
+
+    <!-- 5. Video Player -->
+    <div id="videoWindow" class="window media-viewer" style="top: 100px; left: 150px; width: 480px; height: 360px;">
+        <div class="title-bar" onmousedown="startDrag(event, 'videoWindow')">
+            <div class="title-bar-text">
+                <i class="fa-solid fa-film" style="margin-right:5px;"></i> <span id="video-title">Media Player</span>
+            </div>
+            <div class="title-bar-controls">
+                <button onclick="closeMediaWindow('videoWindow')">X</button>
+            </div>
+        </div>
+        <div class="window-body" style="background:black;">
+            <video id="video-content" controls style="width:100%; height:100%;">
+                <source src="" type="video/mp4">
+            </video>
+        </div>
+    </div>
+
+    <!-- 6. Music Folder -->
+    <div id="musicFolderWindow" class="window folder" style="top: 150px; left: 200px; width: 450px; height: 300px;">
+        <div class="title-bar" onmousedown="startDrag(event, 'musicFolderWindow')">
+            <div class="title-bar-text">
+                <i class="fa-solid fa-folder-open" style="margin-right:5px;"></i> C:\My_Music
+            </div>
+            <div class="title-bar-controls">
+                <button onclick="closeWindow('musicFolderWindow')">X</button>
+            </div>
+        </div>
+        <div style="background: #c0c0c0; padding: 2px 5px; border-bottom: 1px solid #808080; font-size: 12px; cursor:pointer;">
+            <span onclick="addMusicFile()" style="margin-right: 10px;"><b><u>F</u>ile > Add Song...</b></span> <u>V</u>iew  <u>H</u>elp
+        </div>
+        <div class="window-body" id="music-file-container">
+            <div style="width:100%; font-size:10px; color: gray; padding: 5px;">* Dbl-Click or Drag to Play *</div>
+            <!-- Music files will be dynamically generated here -->
+        </div>
+    </div>
+
+    <!-- 7. Recycle Bin -->
+    <div id="recycleWindow" class="window folder" style="top: 250px; left: 400px; width: 400px; height: 250px;">
+        <div class="title-bar" onmousedown="startDrag(event, 'recycleWindow')">
+            <div class="title-bar-text">
+                <i class="fa-solid fa-trash-can" style="margin-right:5px;"></i> Recycle Bin
+            </div>
+            <div class="title-bar-controls">
+                <button onclick="closeWindow('recycleWindow')">X</button>
+            </div>
+        </div>
+        <div style="background: #c0c0c0; padding: 2px 5px; border-bottom: 1px solid #808080; font-size: 12px; cursor:pointer;">
+            <span onclick="emptyRecycleBin()" style="margin-right: 10px;"><b><u>F</u>ile > Empty Recycle Bin</b></span>
+            <span onclick="restoreAllFiles()"><b><u>F</u>ile > Restore All</b></span>
+        </div>
+        <div class="window-body" id="recycle-bin-container">
+            <div style="width:100%; font-size:10px; color: gray; padding: 5px;">* Drag files here to delete *</div>
+            <!-- Recycle bin will be populated dynamically -->
+        </div>
+    </div>
+
+    <!-- 8. Contact Window -->
+    <div id="contactWindow" class="window" style="top: 120px; left: 100px; width: 350px;">
+        <div class="title-bar" onmousedown="startDrag(event, 'contactWindow')">
+            <div class="title-bar-text">
+                <i class="fa-solid fa-envelope" style="margin-right:5px;"></i> Contact Me
+            </div>
+            <div class="title-bar-controls">
+                <button onclick="closeWindow('contactWindow')">X</button>
+            </div>
+        </div>
+        <div class="window-body" style="background: #c0c0c0; border: none; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <i class="fa-solid fa-envelope-open-text" style="font-size: 40px; color: #333; margin-bottom: 20px;"></i>
+            <p style="font-size: 16px; margin: 10px 0;">Let's work together!</p>
+            <div style="text-align: left; background: white; padding: 15px; border: inset 2px; width: 90%;">
+                <p style="margin: 10px 0;"><i class="fa-solid fa-envelope" style="color: #3498db; margin-right: 10px;"></i> email: dennis_trillion@gmail.com</p>
+                <p style="margin: 10px 0;"><i class="fa-solid fa-phone" style="color: #2ecc71; margin-right: 10px;"></i> phone: 091234567890</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. Music Player (Updated) -->
+    <div id="musicWindow" class="window winamp" style="top: 200px; left: 300px; width: 280px; height: auto; min-height: auto;">
+        <div class="title-bar" onmousedown="startDrag(event, 'musicWindow')" style="background: #333;">
+            <div class="title-bar-text">
+                <i class="fa-solid fa-bolt" style="color: yellow; margin-right:5px;"></i> WINAMP
+            </div>
+            <div class="title-bar-controls">
+                <button onclick="closeWindow('musicWindow')">X</button>
+            </div>
+        </div>
+        
+        <div id="winamp-display" class="winamp-display">
+            <div id="winamp-content" style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:center;">
+                <marquee id="scrolling-title" scrollamount="3">*** DRAG MUSIC HERE TO PLAY *** </marquee>
+                <div id="timer">00:00 / 00:00</div>
+                <div class="progress-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div id="file-info" style="font-size: 10px; margin-top: 5px;">No file loaded</div>
+            </div>
+        </div>
+        
+        <div class="winamp-controls">
+            <button class="win-btn" onclick="previousTrack()"><i class="fa-solid fa-backward-step"></i></button>
+            <button class="win-btn" onclick="playMusic()"><i class="fa-solid fa-play"></i></button>
+            <button class="win-btn" onclick="pauseMusic()"><i class="fa-solid fa-pause"></i></button>
+            <button class="win-btn" onclick="stopMusic()"><i class="fa-solid fa-stop"></i></button>
+            <button class="win-btn" onclick="nextTrack()"><i class="fa-solid fa-forward-step"></i></button>
+        </div>
+        
+        <!-- Volume Control -->
+        <div style="padding: 5px 10px; display: flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-volume-high" style="color: #0f0; font-size: 12px;"></i>
+            <input type="range" id="volume-control" min="0" max="100" value="80" style="width: 100%;" oninput="updateVolume(this.value)">
+        </div>
+    </div>
+
+    <!-- START MENU -->
+    <div id="start-menu">
+        <div class="start-sidebar"><span>STIFI 98</span></div>
+        <div class="menu-items">
+            <div class="menu-item" onclick="openWindow('aboutWindow'); toggleStartMenu();"><i class="fa-solid fa-user"></i> About Me</div>
+            <div class="menu-item" onclick="openWindow('projectsWindow'); toggleStartMenu();"><i class="fa-solid fa-folder"></i> Projects</div>
+            <div class="menu-item" onclick="openWindow('displayWindow'); toggleStartMenu();"><i class="fa-solid fa-desktop"></i> Display Settings</div>
+            <hr>
+            <div class="menu-item" onclick="window.location.reload()"><i class="fa-solid fa-power-off"></i> Shut Down...</div>
+        </div>
+    </div>
+
+    <!-- TASKBAR -->
+    <div id="taskbar">
+        <div id="start-button" onclick="toggleStartMenu()"><i class="fa-brands fa-windows"></i> Start</div>
+        <div class="divider"></div>
+        <!-- Taskbar apps will be added here dynamically -->
+        <div id="taskbar-apps" style="display: flex; flex-grow: 1;"></div>
+        <div class="divider"></div>
+        <div id="tray">
+            <i class="fa-solid fa-volume-high" style="margin-right: 5px;"></i>
+            <span id="clock">12:00 PM</span>
+        </div>
+    </div>
+
+    <!-- Hidden Audio Element for Actual Music Playback -->
+    <audio id="music-audio" style="display: none;"></audio>
+
+    <script>
+        // ===================================================================
+        // MANUAL FILE CONFIGURATION - EDIT THESE ARRAYS TO ADD YOUR FILES
+        // ===================================================================
+        
+        // PROJECT FILES - Add your images and videos here
+        let projectFiles = [
+            // Add your images here (use relative paths)
+            { name: 'monalisa.jpg', type: 'image', url: 'images/monalisa.jpg' },
+            { name: 'legends-lang-nakakaalam.jpg', type: 'image', url: 'images/legends lang nakakaalam.jpeg' },
+            
+            // Add your videos here (use relative paths)  
+            { name: 'picollo.mp4', type: 'video', url: 'videos/picollo.mp4' },
+            { name: 'court-of-appeal.mp4', type: 'video', url: 'videos/court-of-appeal.mp4' },
+        ];
+
+        // MUSIC FILES - Add your music tracks here
+        let musicTracks = [
+            // Add your music files here (use relative paths)
+            { file: 'music/take me as i am.mp3', name: 'take me as i am' },
+            { file: 'music/i miss you.mp3', name: 'i miss you' },
+            { file: 'music/arnold clavio.mp3', name: 'arnold clavio' }
+            // Add more tracks as needed
+        ];
+
+        // ===================================================================
+        // END OF MANUAL FILE CONFIGURATION
+        // ===================================================================
+
+        // ------------------------------
+        // TASKBAR MANAGEMENT
+        // ------------------------------
+        let openWindows = {};
+        
+        function updateTaskbar() {
+            const taskbarApps = document.getElementById('taskbar-apps');
+            taskbarApps.innerHTML = '';
+            
+            Object.keys(openWindows).forEach(windowId => {
+                if (openWindows[windowId]) {
+                    const windowElement = document.getElementById(windowId);
+                    const title = windowElement.querySelector('.title-bar-text').textContent;
+                    
+                    const appButton = document.createElement('div');
+                    appButton.className = 'taskbar-app';
+                    appButton.innerHTML = title;
+                    appButton.onclick = () => {
+                        if (windowElement.style.display === 'none') {
+                            openWindow(windowId);
+                        } else {
+                            bringToFront(windowId);
+                        }
+                    };
+                    
+                    taskbarApps.appendChild(appButton);
+                }
+            });
+        }
+        
+        function addToTaskbar(windowId) {
+            openWindows[windowId] = true;
+            updateTaskbar();
+        }
+        
+        function removeFromTaskbar(windowId) {
+            openWindows[windowId] = false;
+            updateTaskbar();
+        }
+
+        // ------------------------------
+        // RECYCLE BIN FUNCTIONALITY
+        // ------------------------------
+        let recycleBinItems = [];
+        
+        function addToRecycleBin(fileName, fileType, fileUrl) {
+            recycleBinItems.push({
+                name: fileName,
+                type: fileType,
+                url: fileUrl,
+                id: Date.now() + Math.random()
+            });
+            updateRecycleBinDisplay();
+        }
+        
+        function updateRecycleBinDisplay() {
+            const container = document.getElementById('recycle-bin-container');
+            // Clear existing items except the instruction text
+            const instruction = container.querySelector('div');
+            container.innerHTML = '';
+            if (instruction) container.appendChild(instruction);
+            
+            // Add recycle bin items
+            recycleBinItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'trash-item';
+                div.setAttribute('data-id', item.id);
+                
+                const iconClass = item.type === 'image' ? 'fa-regular fa-image' : 
+                                 item.type === 'video' ? 'fa-solid fa-film' : 
+                                 'fa-solid fa-file-audio';
+                const iconStyle = item.type === 'video' ? 'style="color: #9b59b6;"' : '';
+                
+                div.innerHTML = `<i class="${iconClass}" ${iconStyle}></i><span>${item.name}</span>`;
+                div.ondblclick = () => {
+                    if (item.type === 'image' || item.type === 'video') {
+                        openUploadedMedia(item.url, item.type, item.name);
+                    }
+                };
+                
+                container.appendChild(div);
+            });
+            
+            // Update item count in window title
+            const title = document.querySelector('#recycleWindow .title-bar-text');
+            if (recycleBinItems.length > 0) {
+                title.innerHTML = `<i class="fa-solid fa-trash-can" style="margin-right:5px;"></i> Recycle Bin (${recycleBinItems.length})`;
+            } else {
+                title.innerHTML = `<i class="fa-solid fa-trash-can" style="margin-right:5px;"></i> Recycle Bin`;
+            }
+        }
+        
+        function emptyRecycleBin() {
+            if (recycleBinItems.length === 0) {
+                alert('Recycle Bin is already empty!');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to permanently delete ${recycleBinItems.length} item(s)?`)) {
+                recycleBinItems = [];
+                updateRecycleBinDisplay();
+                alert('Recycle Bin emptied!');
+            }
+        }
+        
+        function restoreAllFiles() {
+            if (recycleBinItems.length === 0) {
+                alert('Recycle Bin is empty!');
+                return;
+            }
+            
+            recycleBinItems = [];
+            updateRecycleBinDisplay();
+            alert('All items restored!');
+        }
+
+        // ------------------------------
+        // PROJECTS FOLDER INITIALIZATION
+        // ------------------------------
+        function initializeProjectFiles() {
+            const container = document.getElementById('project-file-container');
+            
+            // Clear existing items except the instruction
+            const instruction = container.querySelector('div');
+            container.innerHTML = '';
+            if (instruction) container.appendChild(instruction);
+            
+            // Add project files from the array
+            projectFiles.forEach(file => {
+                const div = document.createElement('div');
+                div.className = 'project-item';
+                div.ondblclick = () => openUploadedMedia(file.url, file.type, file.name);
+                // Add drag to recycle bin functionality
+                div.setAttribute('draggable', 'true');
+                div.ondragstart = (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        type: 'file',
+                        fileType: file.type,
+                        fileName: file.name,
+                        fileUrl: file.url
+                    }));
+                };
+                
+                const iconClass = file.type === 'image' ? 'fa-regular fa-image' : 'fa-solid fa-film';
+                const iconStyle = file.type === 'video' ? 'style="color: #9b59b6;"' : '';
+                
+                div.innerHTML = `<i class="${iconClass}" ${iconStyle}></i><span>${file.name}</span>`;
+                container.appendChild(div);
+            });
+            
+            // Add "Add More" slot
+            const addMoreSlot = document.createElement('div');
+            addMoreSlot.className = 'project-item empty-slot';
+            addMoreSlot.onclick = () => addProjectFile();
+            addMoreSlot.style.border = '1px dashed #808080';
+            addMoreSlot.style.opacity = '0.7';
+            addMoreSlot.innerHTML = '<i class="fa-solid fa-plus"></i><span>Add More...</span>';
+            container.appendChild(addMoreSlot);
+        }
+
+        // ------------------------------
+        // MUSIC FOLDER INITIALIZATION
+        // ------------------------------
+        function initializeMusicFiles() {
+            const container = document.getElementById('music-file-container');
+            
+            // Clear existing items except the instruction
+            const instruction = container.querySelector('div');
+            container.innerHTML = '';
+            if (instruction) container.appendChild(instruction);
+            
+            // Add music files from the array
+            musicTracks.forEach(track => {
+                const div = document.createElement('div');
+                div.className = 'music-file-item';
+                div.ondblclick = () => playDroppedTrack(track.file, track.name);
+                div.onmousedown = (e) => startFileDrag(e, track.file, track.name);
+                div.innerHTML = `<i class="fa-solid fa-file-audio"></i><span>${track.file.split('/').pop()}</span>`;
+                container.appendChild(div);
+            });
+            
+            // Add "Add More" slot
+            const addMoreSlot = document.createElement('div');
+            addMoreSlot.className = 'music-file-item empty-slot';
+            addMoreSlot.onclick = () => addMusicFile();
+            addMoreSlot.style.border = '1px dashed #808080';
+            addMoreSlot.style.opacity = '0.7';
+            addMoreSlot.innerHTML = '<i class="fa-solid fa-plus"></i><span>Add More...</span>';
+            container.appendChild(addMoreSlot);
+        }
+
+        // ------------------------------
+        // PROJECTS FOLDER LOGIC
+        // ------------------------------
+        function addProjectFile(type) {
+            if (!type) {
+                // If no type specified, ask the user
+                type = prompt("Add Image or Video? (type 'image' or 'video')");
+                if (!type || (type !== 'image' && type !== 'video')) {
+                    alert("Please enter 'image' or 'video'");
+                    return;
+                }
+            }
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = type === 'image' ? 'image/*' : 'video/*';
+            
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (file) {
+                    const fileName = file.name;
+                    const fileUrl = URL.createObjectURL(file);
+                    
+                    // Add to project files array
+                    projectFiles.push({ 
+                        name: fileName, 
+                        type: type, 
+                        url: fileUrl,
+                        fileObject: file
+                    });
+                    
+                    // Reinitialize the project files display
+                    initializeProjectFiles();
+                    
+                    alert(`${fileName} added to projects!`);
+                }
+            };
+            
+            input.click();
+        }
+
+        // Make Recycle Bin a drop target
+        document.getElementById('recycle-bin-container').addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        
+        document.getElementById('recycle-bin-container').addEventListener('drop', (e) => {
+            e.preventDefault();
+            try {
+                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                if (data.type === 'file') {
+                    addToRecycleBin(data.fileName, data.fileType, data.fileUrl);
+                    alert(`"${data.fileName}" moved to Recycle Bin`);
+                }
+            } catch (error) {
+                // Not a valid file drop
+            }
+        });
+
+        function openUploadedMedia(url, type, fileName = 'Project File') {
+            if (type === 'image') {
+                document.getElementById('photo-title').innerText = fileName;
+                document.getElementById('photo-content').src = url;
+                openWindow('photoWindow');
+            } else if (type === 'video') {
+                document.getElementById('video-title').innerText = fileName;
+                document.getElementById('video-content').src = url;
+                openWindow('videoWindow');
+                document.getElementById('video-content').play();
+            }
+        }
+
+        // ------------------------------
+        // MUSIC PLAYER LOGIC WITH REAL AUDIO
+        // ------------------------------
+        let currentTrack = null;
+        let currentTrackIndex = -1;
+        let isPlaying = false;
+
+        const audioElement = document.getElementById('music-audio');
+        const progressBar = document.getElementById('progress-bar');
+        const timerElement = document.getElementById('timer');
+        const fileInfoElement = document.getElementById('file-info');
+        const volumeControl = document.getElementById('volume-control');
+
+        // Set initial volume
+        audioElement.volume = volumeControl.value / 100;
+
+        function updateVolume(value) {
+            audioElement.volume = value / 100;
+        }
+
+        function updateProgress() {
+            if (audioElement.duration) {
+                const progress = (audioElement.currentTime / audioElement.duration) * 100;
+                progressBar.style.width = progress + '%';
+                
+                const currentMinutes = Math.floor(audioElement.currentTime / 60);
+                const currentSeconds = Math.floor(audioElement.currentTime % 60);
+                const totalMinutes = Math.floor(audioElement.duration / 60);
+                const totalSeconds = Math.floor(audioElement.duration % 60);
+                
+                timerElement.textContent = 
+                    (currentMinutes < 10 ? '0' + currentMinutes : currentMinutes) + ':' +
+                    (currentSeconds < 10 ? '0' + currentSeconds : currentSeconds) + ' / ' +
+                    (totalMinutes < 10 ? '0' + totalMinutes : totalMinutes) + ':' +
+                    (totalSeconds < 10 ? '0' + totalSeconds : totalSeconds);
+            }
+        }
+
+        audioElement.addEventListener('timeupdate', updateProgress);
+        audioElement.addEventListener('ended', nextTrack);
+
+        function playDroppedTrack(filename, trackName) {
+            openWindow('musicWindow');
+            
+            // Find the track in our library
+            const trackIndex = musicTracks.findIndex(track => track.file === filename);
+            if (trackIndex !== -1) {
+                currentTrackIndex = trackIndex;
+                loadTrack(currentTrackIndex);
+                playMusic();
+            } else {
+                // If not found, try to play directly
+                audioElement.src = filename;
+                fileInfoElement.textContent = trackName || filename;
+                document.getElementById('scrolling-title').textContent = `*** ${trackName || filename} ***`;
+                playMusic();
+            }
+        }
+
+        function loadTrack(index) {
+            if (index >= 0 && index < musicTracks.length) {
+                const track = musicTracks[index];
+                audioElement.src = track.file;
+                fileInfoElement.textContent = track.name;
+                document.getElementById('scrolling-title').textContent = `*** ${track.name} ***`;
+                currentTrackIndex = index;
+            }
+        }
+
+        function playMusic() {
+            if (audioElement.src) {
+                audioElement.play();
+                isPlaying = true;
+                document.getElementById('scrolling-title').innerHTML = `▶️ ${fileInfoElement.textContent}`;
+            } else {
+                // If no track loaded, load first one
+                if (musicTracks.length > 0) {
+                    loadTrack(0);
+                    playMusic();
+                }
+            }
+        }
+
+        function pauseMusic() {
+            audioElement.pause();
+            isPlaying = false;
+            document.getElementById('scrolling-title').innerHTML = `⏸️ ${fileInfoElement.textContent}`;
+        }
+
+        function stopMusic() {
+            audioElement.pause();
+            audioElement.currentTime = 0;
+            isPlaying = false;
+            progressBar.style.width = '0%';
+            timerElement.textContent = '00:00 / 00:00';
+            document.getElementById('scrolling-title').innerHTML = `■ ${fileInfoElement.textContent}`;
+        }
+
+        function nextTrack() {
+            if (musicTracks.length > 0) {
+                const nextIndex = (currentTrackIndex + 1) % musicTracks.length;
+                loadTrack(nextIndex);
+                playMusic();
+            }
+        }
+
+        function previousTrack() {
+            if (musicTracks.length > 0) {
+                const prevIndex = (currentTrackIndex - 1 + musicTracks.length) % musicTracks.length;
+                loadTrack(prevIndex);
+                playMusic();
+            }
+        }
+
+        // ------------------------------
+        // DISPLAY PROPERTIES LOGIC
+        // ------------------------------
+        let pendingWallpaper = { color: '', image: '', style: 'cover' };
+
+        function setBgColor(color) {
+            pendingWallpaper.color = color;
+            pendingWallpaper.image = 'none'; 
+            document.getElementById('wallpaper-select').value = 'none';
+            document.getElementById('color-hex').textContent = color;
+            updatePreview();
+        }
+
+        function updateWallpaperPreview() {
+            const select = document.getElementById('wallpaper-select');
+            const style = document.getElementById('wallpaper-style').value;
+            const val = select.value;
+            pendingWallpaper.style = style;
+
+            if(val === 'none') {
+                pendingWallpaper.image = 'none';
+            } else if(val === 'clouds') {
+                pendingWallpaper.image = 'url("https://img.freepik.com/free-photo/blue-sky-with-clouds_1112-462.jpg")';
+            } else if(val === 'stars') {
+                pendingWallpaper.image = 'url("https://img.freepik.com/free-vector/stars-night-sky-background_1048-6453.jpg")';
+            } else if(val === 'matrix') {
+                pendingWallpaper.image = 'url("https://media.istockphoto.com/id/531633071/vector/matrix-background.jpg?s=612x612&w=0&k=20&c=8yC9VnZ9aYyWqj8aJ5fX8aZ8aZ8aZ8aZ8aZ8aZ8=")';
+            }
+            updatePreview();
+        }
+
+        function handleCustomBg(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    pendingWallpaper.image = `url(${e.target.result})`;
+                    document.getElementById('wallpaper-select').value = 'none';
+                    updatePreview();
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function updatePreview() {
+            const prev = document.getElementById('bg-preview');
+            if(pendingWallpaper.color) {
+                prev.style.backgroundColor = pendingWallpaper.color;
+                prev.style.backgroundImage = 'none';
+            }
+            if(pendingWallpaper.image && pendingWallpaper.image !== 'none') {
+                prev.style.backgroundImage = pendingWallpaper.image;
+                prev.style.backgroundColor = 'transparent';
+                
+                // Handle different background styles
+                if(pendingWallpaper.style === 'cover') {
+                    prev.style.backgroundSize = 'cover';
+                    prev.style.backgroundRepeat = 'no-repeat';
+                } else if(pendingWallpaper.style === 'repeat') {
+                    prev.style.backgroundSize = 'auto';
+                    prev.style.backgroundRepeat = 'repeat';
+                } else if(pendingWallpaper.style === 'contain') {
+                    prev.style.backgroundSize = 'contain';
+                    prev.style.backgroundRepeat = 'no-repeat';
+                    prev.style.backgroundPosition = 'center';
+                }
+            }
+        }
+
+        function applyWallpaper() {
+            if(pendingWallpaper.color) {
+                document.body.style.backgroundColor = pendingWallpaper.color;
+                document.body.style.backgroundImage = 'none';
+            }
+            if(pendingWallpaper.image && pendingWallpaper.image !== 'none') {
+                document.body.style.backgroundImage = pendingWallpaper.image;
+                document.body.style.backgroundColor = 'transparent';
+                
+                // Apply the correct style to body
+                if(pendingWallpaper.style === 'cover') {
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundRepeat = 'no-repeat';
+                } else if(pendingWallpaper.style === 'repeat') {
+                    document.body.style.backgroundSize = 'auto';
+                    document.body.style.backgroundRepeat = 'repeat';
+                } else if(pendingWallpaper.style === 'contain') {
+                    document.body.style.backgroundSize = 'contain';
+                    document.body.style.backgroundRepeat = 'no-repeat';
+                    document.body.style.backgroundPosition = 'center';
+                }
+            }
+            
+            // Reset preview
+            pendingWallpaper = { color: '', image: '', style: 'cover' };
+            document.getElementById('bg-preview').style.backgroundImage = 'none';
+            document.getElementById('bg-preview').style.backgroundColor = 'var(--bg-teal)';
+        }
+
+        // ------------------------------
+        // MEDIA VIEWERS
+        // ------------------------------
+        function openPhoto(fileName, src) {
+            document.getElementById('photo-title').innerText = fileName;
+            document.getElementById('photo-content').src = src;
+            openWindow('photoWindow');
+        }
+        
+        function openVideo(fileName, src) {
+            document.getElementById('video-title').innerText = fileName;
+            document.getElementById('video-content').src = src;
+            openWindow('videoWindow');
+            document.getElementById('video-content').play();
+        }
+        
+        function closeMediaWindow(id) {
+            document.getElementById(id).style.display = 'none';
+            removeFromTaskbar(id);
+            if(id === 'videoWindow') document.getElementById('video-content').pause();
+            // Stop music if playing
+            if(id === 'musicWindow') stopMusic();
+        }
+
+        // ------------------------------
+        // ICON DRAGGING
+        // ------------------------------
+        let isIconDragging = false, currentIcon = null, iconOffset = {x:0, y:0}, initialIconPos = {x:0, y:0};
+        
+        function startIconDrag(e, icon) {
+            e.preventDefault();
+            isIconDragging = true;
+            currentIcon = icon;
+            document.querySelectorAll('.icon').forEach(i => i.classList.remove('selected'));
+            currentIcon.classList.add('selected');
+            const rect = currentIcon.getBoundingClientRect();
+            iconOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            document.addEventListener('mousemove', dragIcon);
+            document.addEventListener('mouseup', stopIconDrag);
+        }
+        
+        function dragIcon(e) {
+            if(!isIconDragging) return;
+            currentIcon.style.left = (e.clientX - iconOffset.x) + 'px';
+            currentIcon.style.top = (e.clientY - iconOffset.y) + 'px';
+            currentIcon.style.bottom = 'auto'; currentIcon.style.right = 'auto';
+        }
+        
+        function stopIconDrag() {
+            isIconDragging = false;
+            document.removeEventListener('mousemove', dragIcon);
+            document.removeEventListener('mouseup', stopIconDrag);
+        }
+
+        // ------------------------------
+        // MUSIC & FILE DRAG
+        // ------------------------------
+        function addMusicFile() {
+            const name = prompt("Song name? (include .mp3 extension)");
+            if(name) {
+                const file = prompt("MP3 file path? (e.g., music/song.mp3)");
+                if(file) {
+                    // Add to music library
+                    musicTracks.push({ file: file, name: name.replace('.mp3', '') });
+                    
+                    // Reinitialize the music files display
+                    initializeMusicFiles();
+                }
+            }
+        }
+
+        let isFileDragging = false, draggedFileName = "", draggedFileTrack = "";
+        const ghost = document.getElementById('drag-ghost');
+        const winamp = document.getElementById('musicWindow');
+
+        function startFileDrag(e, filename, trackName) {
+            e.stopPropagation(); e.preventDefault();
+            isFileDragging = true; 
+            draggedFileName = filename;
+            draggedFileTrack = trackName || filename;
+            document.getElementById('drag-ghost-text').innerText = trackName || filename;
+            ghost.style.display = 'flex';
+            moveFileGhost(e);
+            document.addEventListener('mousemove', moveFileGhost);
+            document.addEventListener('mouseup', dropFile);
+        }
+        
+        function moveFileGhost(e) {
+            if(!isFileDragging) return;
+            ghost.style.left = (e.clientX + 10) + 'px';
+            ghost.style.top = (e.clientY + 10) + 'px';
+            const rect = winamp.getBoundingClientRect();
+            if(e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom && winamp.style.display !== 'none') {
+                winamp.classList.add('drag-over');
+            } else {
+                winamp.classList.remove('drag-over');
+            }
+        }
+        
+        function dropFile(e) {
+            isFileDragging = false; ghost.style.display = 'none'; winamp.classList.remove('drag-over');
+            document.removeEventListener('mousemove', moveFileGhost);
+            document.removeEventListener('mouseup', dropFile);
+            const rect = winamp.getBoundingClientRect();
+            if(e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom && winamp.style.display !== 'none') {
+                playDroppedTrack(draggedFileName, draggedFileTrack);
+            }
+        }
+
+        // ------------------------------
+        // GENERAL UI
+        // ------------------------------
+        function updateClock() {
+            const now = new Date();
+            let h = now.getHours(), m = now.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12; m = m < 10 ? '0'+m : m;
+            document.getElementById('clock').textContent = h + ':' + m + ' ' + ampm;
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        function toggleStartMenu() {
+            const m = document.getElementById('start-menu'), b = document.getElementById('start-button');
+            m.style.display = m.style.display === 'block' ? 'none' : 'block';
+            b.classList.toggle('active');
+        }
+        document.addEventListener('click', e => {
+            const m = document.getElementById('start-menu'), b = document.getElementById('start-button');
+            if (!m.contains(e.target) && !b.contains(e.target)) { m.style.display = 'none'; b.classList.remove('active'); }
+        });
+
+        let zIndex = 10, isDragging = false, currentWindow = null, winOffset = {x:0, y:0};
+        function openWindow(id) {
+            document.getElementById(id).style.display = 'flex';
+            bringToFront(id);
+            addToTaskbar(id);
+        }
+        function closeWindow(id) { 
+            const win = document.getElementById(id);
+            win.style.display = 'none'; 
+            removeFromTaskbar(id);
+            
+            // If closing music player, stop music
+            if (id === 'musicWindow') stopMusic();
+        }
+        function bringToFront(id) { 
+            document.getElementById(id).style.zIndex = ++zIndex; 
+            // Update taskbar active state
+            document.querySelectorAll('.taskbar-app').forEach(app => {
+                app.classList.remove('active');
+            });
+        }
+
+        function startDrag(e, id) {
+            // Check if clicking resize handle area (bottom right 10x10)
+            const win = document.getElementById(id);
+            const rect = win.getBoundingClientRect();
+            if(e.clientX > rect.right - 15 && e.clientY > rect.bottom - 15) {
+                // Let browser handle resize
+                return; 
+            }
+
+            e.preventDefault(); 
+            isDragging = true; 
+            currentWindow = win;
+            bringToFront(id);
+            winOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            document.addEventListener('mousemove', dragWindow);
+            document.addEventListener('mouseup', stopDrag);
+        }
+        function dragWindow(e) {
+            if(!isDragging) return;
+            currentWindow.style.left = (e.clientX - winOffset.x) + 'px';
+            currentWindow.style.top = (e.clientY - winOffset.y) + 'px';
+        }
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', dragWindow);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+        
+        document.getElementById('desktop').addEventListener('click', e => {
+            if(e.target.id === 'desktop') document.querySelectorAll('.icon').forEach(i => i.classList.remove('selected'));
+        });
+
+        // Initialize file displays when page loads
+        window.onload = function() {
+            initializeProjectFiles();
+            initializeMusicFiles();
+            updateRecycleBinDisplay();
+        };
+    </script>
 </body>
 </html>
